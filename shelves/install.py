@@ -80,7 +80,7 @@ def main(argv=None):
     if int(run(adb + ['shell', 'getprop', 'ro.build.version.sdk'])) < 26:
         raise RuntimeError('Android 8 or later is required; nothing installed')
     previous = home(adb)
-    if args.select_home and previous != target:
+    if previous != target:
         args.state_dir.mkdir(parents=True, exist_ok=True)
         # Save the immediately preceding Home for this explicit handover.
         state_file.write_text(json.dumps({'endpoint': endpoint, 'target': target, 'previous': previous}, indent=2))
@@ -98,13 +98,21 @@ def main(argv=None):
     print('Building ' + variant + ' APK…', flush=True)
     run(command)
     apk = ROOT / 'app/build/outputs/apk' / variant / ('app-' + variant + '.apk')
-    run(adb + ['install', '-r', str(apk)])
-    # Starting explicitly proves it launches; installation alone never changes Home selection.
-    output = run(adb + ['shell', 'am', 'start', '-W', '-n', target])
-    if 'Status: ok' not in output:
-        raise RuntimeError('New activity did not report a successful launch; previous Home was left available')
-    if args.select_home:
-        select_home(adb, target, previous)
+    try:
+        run(adb + ['install', '-r', str(apk)])
+        # Android can clear its preferred Home when another HOME handler is installed.
+        # Reassert the recorded selection, even in install-only mode.
+        run(adb + ['shell', 'cmd', 'package', 'set-home-activity', '--user', '0', previous])
+        if home(adb) != previous:
+            raise RuntimeError('Could not preserve the previous Home; use --restore-home')
+        output = run(adb + ['shell', 'am', 'start', '-W', '-n', target])
+        if 'Status: ok' not in output:
+            raise RuntimeError('New activity did not report a successful launch')
+        if args.select_home:
+            select_home(adb, target, previous)
+    except RuntimeError:
+        run(adb + ['shell', 'cmd', 'package', 'set-home-activity', '--user', '0', previous])
+        raise
     print('Installed. Stock launcher remains enabled. Optional permissions were not granted.')
 
 

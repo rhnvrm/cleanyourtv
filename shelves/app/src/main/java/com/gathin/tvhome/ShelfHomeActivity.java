@@ -151,7 +151,8 @@ public final class ShelfHomeActivity extends Activity implements AppAdapter.Tile
         heroTitle=text("",48,WHITE);heroTitle.setTypeface(light);heroTitle.setSingleLine(true);heroTitle.setEllipsize(TextUtils.TruncateAt.END);
         FrameLayout.LayoutParams heroLp=new FrameLayout.LayoutParams(-1,-2,Gravity.BOTTOM);heroLp.leftMargin=dp(12);heroLp.bottomMargin=dp(35);heroSpace.addView(heroTitle,heroLp);content.addView(heroSpace,new LinearLayout.LayoutParams(-1,height));
         List<Card> dock=new ArrayList<>(),other=new ArrayList<>();Set<String> pinned=new HashSet<>(),launchable=new HashSet<>();Map<String,Integer> appByPackage=new HashMap<>();
-        for(int i=0;i<apps.appCount();i++){String pkg=apps.packageAt(i);if(pkg==null||apps.keyAt(i)==null||apps.labelAt(i).isEmpty())continue;appByPackage.put(pkg,i);if(i<PIN_COUNT){dock.add(appCard(i));pinned.add(pkg);}else other.add(appCard(i));if(!pkg.equals(getPackageName())&&!pkg.equals("com.android.tv.settings")&&!pkg.equals("com.android.vending"))launchable.add(pkg);}
+        Set<String> homePackages=new HashSet<>();for(ResolveInfo home:getPackageManager().queryIntentActivities(new Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_HOME),0))if(home.activityInfo!=null)homePackages.add(home.activityInfo.packageName);
+        for(int i=0;i<apps.appCount();i++){String pkg=apps.packageAt(i);if(pkg==null||apps.keyAt(i)==null||apps.labelAt(i).isEmpty())continue;appByPackage.put(pkg,i);if(i<PIN_COUNT){dock.add(appCard(i));pinned.add(pkg);}else other.add(appCard(i));if(!homePackages.contains(pkg)&&!pkg.equals(getPackageName())&&!pkg.equals("com.android.tv.settings")&&!pkg.equals("com.android.vending"))launchable.add(pkg);}
         for(String pkg:ShelfFilters.recentApps(foregroundApps,pinned,launchable,2)){Card card=appCard(appByPackage.get(pkg));card.recent=true;card.subtitle="Recent";dock.add(card);}
         row(null,dock,true,null);
         List<ShelfRepository.Item> continuing=ShelfFilters.continuing(data.continuing,sources("continue"),sort("continue"),controls.getBoolean("continue-unstarted",false),controls.getBoolean("continue-dated",false));
@@ -270,7 +271,7 @@ public final class ShelfHomeActivity extends Activity implements AppAdapter.Tile
                 controls.edit().putBoolean(keys[index],!enabled).apply();
                 if(index==0){if(enabled)PhotoScreensaver.restore(this);updatePhotoButton();}
                 if(index==2)images.setEnabled(!enabled);
-                refresh();
+                handler.postDelayed(this::refresh,160);
             }).setNegativeButton("Cancel",null).show();
         }).show();
     }

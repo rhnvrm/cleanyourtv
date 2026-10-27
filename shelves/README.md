@@ -8,7 +8,7 @@ A source fork of [CleanYourTV](https://github.com/Gathin23/cleanyourtv), based o
 - Stremio's published library channels, where available.
 - An optional one-click Google Photos/Ambient Mode shortcut that preserves the idle screensaver selection.
 
-Android TV 8 or newer is required. The original implementation was tested on Xiaomi Mi Box S (MIBOX4), Android TV 9, firmware PI.3933. The publication fixes have JVM/installer tests and lint/build validation; they have not yet been installed for a fresh-device test. Other TV firmware is not certified. This repository does not debloat devices, disable stock Home, add root access or flash firmware.
+Android TV 8 or newer is required. The original implementation was tested on Xiaomi Mi Box S (MIBOX4), Android TV 9, firmware PI.3933. The updated fork was installed alongside the existing launcher on that device. Fresh opt-in defaults, content loading, artwork, two recent slots, D-pad navigation, sorting persistence, explicit Home handover and saved-Home restoration were checked. The install-only flow now reasserts the previous Home because Android can clear its preferred Home when a second HOME app is installed. Photos recovery in this updated package still awaits a separately approved secure-settings grant; the original Photos implementation was already working on the device. Other TV firmware is not certified. This repository does not debloat devices, disable stock Home, add root access or flash firmware.
 
 ## Build and try
 
@@ -20,7 +20,7 @@ python3 -m unittest discover -s tests -v
 python3 install.py --host <tv-address>
 ```
 
-Windows: use `gradlew.bat` and `python`; `build-and-install.ps1` forwards the same installer arguments. The POSIX wrapper is `build-and-install.sh`. Installation builds a development/debug APK, starts `ShelfHomeActivity`, and leaves the current default Home selected. It never disables the stock launcher or grants optional permissions. Approve the device's ADB authorization prompt yourself.
+Windows: use `gradlew.bat` and `python`; `build-and-install.ps1` forwards the same installer arguments. The POSIX wrapper is `build-and-install.sh`. Installation builds a development/debug APK, explicitly preserves the recorded default Home even if Android clears it during installation, and starts `ShelfHomeActivity`. It never disables the stock launcher or grants optional permissions. Approve the device's ADB authorization prompt yourself.
 
 To explicitly make TV Shelves Home after trying it:
 
